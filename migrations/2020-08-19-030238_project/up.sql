@@ -1,0 +1,7 @@
+-- Your SQL goes here
+CREATE TABLE project (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    path VARCHAR UNIQUE NOT NULL,
+    manual_grade INTEGER NOT NULL,
+    auto_grade INTEGER NOT NULL
+)

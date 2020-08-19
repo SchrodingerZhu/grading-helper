@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8ce59ea9-a3b3-49d5-9a65-b57a491cb45e" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/container.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/model.rs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="28nq02sd" />
+  </component>
+  <component name="ProjectId" id="1gHTgdhMM5VKX9AueIUQNv6W3NR" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="DatabaseDriversLRU" value="sqlite.xerial" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
+  </component>
+  <component name="RunManager">
+    <configuration name="Run helper" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="channel" value="DEFAULT" />
+      <option name="command" value="run --package helper --bin helper" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo Command.Run helper" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="/usr/bin" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8ce59ea9-a3b3-49d5-9a65-b57a491cb45e" name="Default Changelist" comment="" />
+      <created>1597770630429</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1597770630429</updated>
+      <workItem from="1597770631660" duration="27762000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="559" y="229" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1597805759429">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="559" y="229" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1080@0.0.1920.1080" timestamp="1597805759429" />
+    <state x="636" y="366" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1597805558034">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="636" y="366" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1920.1080@0.0.1920.1080" timestamp="1597805558034" />
+    <state x="772" y="286" key="#com.intellij.ide.util.MemberChooser" timestamp="1597811284530">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="772" y="286" key="#com.intellij.ide.util.MemberChooser/0.0.1920.1080@0.0.1920.1080" timestamp="1597811284530" />
+    <state x="746" y="325" key="FileChooserDialogImpl" timestamp="1597805749386">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="746" y="325" key="FileChooserDialogImpl/0.0.1920.1080@0.0.1920.1080" timestamp="1597805749386" />
+    <state width="1869" height="322" key="GridCell.Tab.0.bottom" timestamp="1597841472185">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1869" height="322" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1597841472185" />
+    <state width="1869" height="322" key="GridCell.Tab.0.center" timestamp="1597841472185">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1869" height="322" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1597841472185" />
+    <state width="1869" height="322" key="GridCell.Tab.0.left" timestamp="1597841472184">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1869" height="322" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1597841472184" />
+    <state width="1869" height="322" key="GridCell.Tab.0.right" timestamp="1597841472185">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1869" height="322" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1597841472185" />
+    <state x="446" y="202" key="SettingsEditor" timestamp="1597838149036">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="446" y="202" key="SettingsEditor/0.0.1920.1080@0.0.1920.1080" timestamp="1597838149036" />
+    <state x="622" y="258" width="672" height="678" key="search.everywhere.popup" timestamp="1597805879324">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="622" y="258" width="672" height="678" key="search.everywhere.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1597805879324" />
+  </component>
+</project>
