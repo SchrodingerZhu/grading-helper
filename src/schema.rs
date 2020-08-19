@@ -34,7 +34,6 @@ table! {
     student (id) {
         id -> Integer,
         path -> Text,
-        graded -> Bool,
     }
 }
 

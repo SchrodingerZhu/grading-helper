@@ -11,13 +11,13 @@ joinable!(grade -> project (project_id));
     diesel::Associations,
     diesel::Identifiable,
     Debug,
+    Tablefy,
     serde::Serialize,
     serde::Deserialize)]
 #[table_name="student"]
 pub struct Student {
     pub id: i32,
     pub path: String,
-    pub graded: bool,
 }
 
 #[derive(diesel::QueryableByName,
@@ -50,7 +50,8 @@ pub struct Grade {
     pub student_id: i32,
     pub project_id: i32,
     pub manual_grade: i32,
-    pub auto_grade: i32
+    pub auto_grade: i32,
+    pub comment: String
 }
 
 #[derive(diesel::Queryable,
@@ -103,8 +104,7 @@ pub struct ChangeProject<'a> {
 #[derive(Insertable, Default, Debug, AsChangeset)]
 #[table_name="student"]
 pub struct ChangeStudent<'a> {
-    pub path: Option<&'a str>,
-    pub graded: Option<bool>,
+    pub path: Option<&'a str>
 }
 
 impl Configuration {

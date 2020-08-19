@@ -285,6 +285,7 @@ dependencies = [
  "pretty_env_logger",
  "prettytable-rs",
  "serde",
+ "serde_json",
  "structopt",
  "tablefy",
  "tablefy_derive",

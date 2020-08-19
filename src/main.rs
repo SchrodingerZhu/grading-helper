@@ -3,12 +3,13 @@ extern crate diesel;
 
 use std::path::PathBuf;
 
-use diesel::{Connection, RunQueryDsl, ExpressionMethods};
+use diesel::{BoolExpressionMethods, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, QueryResult};
 use serde::export::fmt::Display;
 use structopt as opt;
 use structopt::StructOpt;
 
 use crate::model::{ChangeStudent, Configuration};
+use prettytable::Cell;
 
 mod container;
 mod schema;
@@ -45,7 +46,9 @@ enum SubCommand {
     #[structopt(about = "Commit current grading result")]
     Commit {
         #[structopt(short, long, help = "Ignore current result and clear the status")]
-        skip: bool
+        skip: bool,
+        #[structopt(subcommand)]
+        subcommand: CommitCommand,
     },
     #[structopt(about = "Project templates management")]
     Project {
@@ -55,11 +58,23 @@ enum SubCommand {
 }
 
 #[derive(opt::StructOpt, Debug)]
+enum CommitCommand {
+    #[structopt(about = "Commit current student and keep the project")]
+    Student,
+    #[structopt(about = "Commit current project and keep the student")]
+    Project,
+}
+
+#[derive(opt::StructOpt, Debug)]
 enum StatusCommand {
     #[structopt(about = "Check configuration and current project")]
     Current,
     #[structopt(about = "List all project template(s)")]
-    Projects
+    Projects,
+    #[structopt(about = "List all students")]
+    Students,
+    #[structopt(about = "List grading result")]
+    Grading,
 }
 
 #[derive(opt::StructOpt, Debug)]
@@ -75,9 +90,9 @@ enum ProjectCommand {
     },
     #[structopt(about = "Remove the template")]
     Remove {
-        #[structopt(short, long, help="The id to remove")]
+        #[structopt(short, long, help = "The id to remove")]
         id: i32
-    }
+    },
 }
 
 trait UnwrapWithLog<T> {
@@ -154,7 +169,6 @@ fn main() {
                             diesel::insert_into(table)
                                 .values(&ChangeStudent {
                                     path: Some(&st_path),
-                                    graded: Some(false),
                                 })
                                 .execute(&conn)
                                 .map(|y| x + y))
@@ -163,14 +177,20 @@ fn main() {
                 .map(|x| log::info!("{} entries added", x))
                 .unwrap_with_log();
         }
-        SubCommand::Commit { skip } => {
+        SubCommand::Commit { skip, subcommand } => {
             model::Configuration::get_global(&conn)
                 .and_then(|mut conf| {
-                    if conf.current_project.is_some() && *skip {
+                    if *skip {
                         let change_set = model::ChangeConfig {
                             id: 1,
-                            current_student: None,
-                            current_project: None,
+                            current_student: match subcommand {
+                                CommitCommand::Student => None,
+                                CommitCommand::Project => conf.current_student
+                            },
+                            current_project: match subcommand {
+                                CommitCommand::Student => conf.current_project,
+                                CommitCommand::Project => None
+                            },
                             auto_grade: None,
                             manual_grade: None,
                             comment: None,
@@ -181,14 +201,22 @@ fn main() {
                             .execute(&conn)
                             .map_err(Into::into)
                             .and(Ok(()))
+                    } else if conf.current_student.is_none() {
+                        Err(anyhow::anyhow!("no current grading student"))
                     } else if conf.current_project.is_none() {
                         Err(anyhow::anyhow!("no current grading project"))
                     } else if conf.auto_grade.is_none() || conf.manual_grade.is_none() {
                         Err(anyhow::anyhow!("current grading is not finished"))
                     } else {
                         let new_grade = model::ChangeGrade {
-                            student_id: conf.current_student.take(),
-                            project_id: conf.current_project.take(),
+                            student_id: match subcommand {
+                                CommitCommand::Student => conf.current_student.take(),
+                                CommitCommand::Project => conf.current_student.clone()
+                            },
+                            project_id: match subcommand {
+                                CommitCommand::Student => conf.current_student.clone(),
+                                CommitCommand::Project => conf.current_student.take()
+                            },
                             manual_grade: conf.manual_grade.take(),
                             auto_grade: conf.auto_grade.take(),
                         };
@@ -209,7 +237,7 @@ fn main() {
         }
         SubCommand::Project { subcommand } => {
             let sql_result = match subcommand {
-                ProjectCommand::Remove { id : target_id} => {
+                ProjectCommand::Remove { id: target_id } => {
                     use schema::project::dsl::*;
                     diesel::delete(project)
                         .filter(id.eq(target_id))
@@ -224,7 +252,7 @@ fn main() {
                                 .values(model::ChangeProject {
                                     path: Some(x),
                                     manual_grade: Some(*manual_grade),
-                                    auto_grade: Some(*auto_grade)
+                                    auto_grade: Some(*auto_grade),
                                 })
                                 .execute(&conn)
                         })
@@ -253,6 +281,54 @@ fn main() {
                         .load::<model::Project>(&conn)
                         .unwrap_with_log();
                     println!("{}", tablefy::into_string(&projects));
+                }
+                StatusCommand::Students => {
+                    let students = schema::student::table
+                        .load::<model::Student>(&conn)
+                        .unwrap_with_log();
+                    println!("{}", tablefy::into_string(&students));
+                }
+                StatusCommand::Grading => {
+                    let students = schema::student::table
+                        .load::<model::Student>(&conn)
+                        .unwrap_with_log();
+                    let projects = schema::project::table
+                        .load::<model::Project>(&conn)
+                        .unwrap_with_log();
+                    let mut table = prettytable::Table::new();
+                    let mut header = prettytable::Row::empty();
+                    header.add_cell(Cell::new("id"));
+                    header.add_cell(Cell::new("student"));
+                    for j in &projects {
+                        header.add_cell(Cell::new(&format!("{}[aut]", j.path)));
+                        header.add_cell(Cell::new(&format!("{}[man]", j.path)));
+                    }
+                    table.add_row(header);
+                    for i in &students {
+                        let mut row = prettytable::Row::empty();
+                        row.add_cell(Cell::new(&i.id.to_string()));
+                        row.add_cell(Cell::new(&i.path));
+                        for j in &projects {
+                            use schema::grade::dsl as g;
+                            let grade : QueryResult<model::Grade> = g::grade
+                                .filter(g::student_id
+                                    .eq(i.id)
+                                    .and(g::project_id.eq(j.id)))
+                                .first::<model::Grade>(&conn);
+                            match grade {
+                                Ok(g) => {
+                                    row.add_cell(prettytable::Cell::new(&g.auto_grade.to_string()));
+                                    row.add_cell(prettytable::Cell::new(&g.manual_grade.to_string()));
+                                }
+                                _ => {
+                                    row.add_cell(prettytable::Cell::default());
+                                    row.add_cell(prettytable::Cell::default());
+                                }
+                            }
+                        }
+                        table.add_row(row);
+                    }
+                    table.printstd();
                 }
             }
         }
