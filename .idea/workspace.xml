@@ -16,13 +16,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8ce59ea9-a3b3-49d5-9a65-b57a491cb45e" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/src/status.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/utils.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/f1b67266-5381-4cfd-8865-e5a892bced8e.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/f1b67266-5381-4cfd-8865-e5a892bced8e.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/migrations/2020-08-19-025426_student/up.sql" beforeDir="false" afterPath="$PROJECT_DIR$/migrations/2020-08-19-025426_student/up.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/model.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/model.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/schema.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/schema.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,6 +66,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Cargo Command.Run helper" />
@@ -84,7 +90,8 @@
       <option name="presentableId" value="Default" />
       <updated>1597770630429</updated>
       <workItem from="1597770631660" duration="27762000" />
-      <workItem from="1597850722361" duration="3770000" />
+      <workItem from="1597850722361" duration="4576000" />
+      <workItem from="1597927945162" duration="10354000" />
     </task>
     <servers />
   </component>
@@ -108,26 +115,30 @@
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="746" y="325" key="FileChooserDialogImpl/0.0.1920.1080@0.0.1920.1080" timestamp="1597805749386" />
-    <state width="1869" height="322" key="GridCell.Tab.0.bottom" timestamp="1597851646916">
+    <state width="1869" height="245" key="GridCell.Tab.0.bottom" timestamp="1597939861973">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1869" height="322" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1597851646916" />
-    <state width="1869" height="322" key="GridCell.Tab.0.center" timestamp="1597851646916">
+    <state width="1869" height="245" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1597939861973" />
+    <state width="1869" height="245" key="GridCell.Tab.0.center" timestamp="1597939861972">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1869" height="322" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1597851646916" />
-    <state width="1869" height="322" key="GridCell.Tab.0.left" timestamp="1597851646915">
+    <state width="1869" height="245" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1597939861972" />
+    <state width="1869" height="245" key="GridCell.Tab.0.left" timestamp="1597939861972">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1869" height="322" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1597851646915" />
-    <state width="1869" height="322" key="GridCell.Tab.0.right" timestamp="1597851646916">
+    <state width="1869" height="245" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1597939861972" />
+    <state width="1869" height="245" key="GridCell.Tab.0.right" timestamp="1597939861972">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
-    <state width="1869" height="322" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1597851646916" />
+    <state width="1869" height="245" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1597939861972" />
     <state x="446" y="202" key="SettingsEditor" timestamp="1597838149036">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>
     <state x="446" y="202" key="SettingsEditor/0.0.1920.1080@0.0.1920.1080" timestamp="1597838149036" />
+    <state x="688" y="301" width="539" height="523" key="StructurePopup" timestamp="1597935838196">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="688" y="301" width="539" height="523" key="StructurePopup/0.0.1920.1080@0.0.1920.1080" timestamp="1597935838196" />
     <state x="622" y="258" width="672" height="678" key="search.everywhere.popup" timestamp="1597805879324">
       <screen x="0" y="0" width="1920" height="1080" />
     </state>

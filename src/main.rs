@@ -3,17 +3,21 @@ extern crate diesel;
 
 use std::path::PathBuf;
 
-use diesel::{BoolExpressionMethods, Connection, ExpressionMethods, QueryDsl, RunQueryDsl, QueryResult};
+use diesel::{BoolExpressionMethods, Connection, ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use prettytable::Cell;
 use serde::export::fmt::Display;
 use structopt as opt;
 use structopt::StructOpt;
 
+use utils::*;
+
 use crate::model::{ChangeStudent, Configuration};
-use prettytable::Cell;
 
 mod container;
 mod schema;
 mod model;
+mod status;
+mod utils;
 
 #[derive(opt::StructOpt, Debug)]
 struct Opt {
@@ -41,41 +45,67 @@ enum SubCommand {
     #[structopt(about = "Check status")]
     Status {
         #[structopt(subcommand)]
-        subcommand: StatusCommand,
+        subcommand: status::StatusCommand,
     },
     #[structopt(about = "Commit current grading result")]
-    Commit {
-        #[structopt(short, long, help = "Ignore current result and clear the status")]
-        skip: bool,
+    Commit,
+    /// no opts now
+    #[structopt(about = "Clean current grading status")]
+    Clean {
         #[structopt(subcommand)]
-        subcommand: CommitCommand,
+        subcommand: CleanCommand,
+    },
+    #[structopt(about = "Remove graded items")] // this is more dangerous
+    Remove {
+        #[structopt(long, help = "Remove all grades")]
+        all: bool,
+        #[structopt(short, long, help = "Remove by id (ignored if all is set)", required_unless = "all")]
+        id: Option<i32>,
     },
     #[structopt(about = "Project templates management")]
     Project {
         #[structopt(subcommand)]
         subcommand: ProjectCommand
     },
+    #[structopt(about = "Get next student or project")]
+    Next {
+        #[structopt(subcommand)]
+        subcommand: NextCommand
+    },
 }
 
 #[derive(opt::StructOpt, Debug)]
-enum CommitCommand {
-    #[structopt(about = "Commit current student and keep the project")]
+enum NextCommand {
+    #[structopt(about = "Get next student")]
+    Student {
+        #[structopt(short, long, help = "Get the student with id instead of next non-grading one")]
+        id: Option<i32>
+    },
+    #[structopt(about = "Get next project")]
+    Project {
+        #[structopt(short, long, help = "Set the project to grade")]
+        id: i32
+    },
+}
+
+#[derive(opt::StructOpt, Debug, Ord, PartialOrd, Eq, PartialEq)]
+enum CleanCommand {
+    #[structopt(about = "Clean current auto grade")]
+    AutoGrade,
+    #[structopt(about = "Clean current manual grade")]
+    ManualGrade,
+    #[structopt(about = "Clean current comment")]
+    Comment,
+    #[structopt(about = "Clean current student and keep the project")]
     Student,
-    #[structopt(about = "Commit current project and keep the student")]
+    #[structopt(about = "Clean current project and keep the student")]
     Project,
+    #[structopt(about = "Clear all grading status")]
+    All,
+    #[structopt(about = "Clear global config")]
+    Config,
 }
 
-#[derive(opt::StructOpt, Debug)]
-enum StatusCommand {
-    #[structopt(about = "Check configuration and current project")]
-    Current,
-    #[structopt(about = "List all project template(s)")]
-    Projects,
-    #[structopt(about = "List all students")]
-    Students,
-    #[structopt(about = "List grading result")]
-    Grading,
-}
 
 #[derive(opt::StructOpt, Debug)]
 enum ProjectCommand {
@@ -95,35 +125,13 @@ enum ProjectCommand {
     },
 }
 
-trait UnwrapWithLog<T> {
-    fn unwrap_with_log(self) -> T;
-}
 
-trait AndThenInto<T, U> {
-    fn and_then_into<E: Into<anyhow::Error>, F>
-    (self, f: F) -> anyhow::Result<U> where F: FnOnce(T) -> std::result::Result<U, E>;
-}
-
-impl<T, E: Into<anyhow::Error>, U> AndThenInto<T, U> for std::result::Result<T, E> {
-    fn and_then_into<K: Into<anyhow::Error>, F>
-    (self, f: F) -> anyhow::Result<U>
-        where F: FnOnce(T) -> std::result::Result<U, K> {
-        self.map_err(Into::into)
-            .and_then(|x| f(x).map_err(Into::into))
-    }
-}
-
-impl<T, E: Display> UnwrapWithLog<T> for std::result::Result<T, E> {
-    fn unwrap_with_log(self) -> T {
-        match self {
-            Ok(res) => res,
-            Err(e) => {
-                log::error!("{}", e);
-                std::process::exit(1);
-            }
-        }
-    }
-}
+/// TODO: Change the logic of grading process
+/// Currently, we can iterate through projects and students at the same time
+/// However, this brings too much load for check the correct logic
+/// Hence, change the logic to
+/// 1. first setup a project
+/// 2. then select a student to grade
 
 fn main() {
     let env = dotenv::dotenv();
@@ -177,63 +185,58 @@ fn main() {
                 .map(|x| log::info!("{} entries added", x))
                 .unwrap_with_log();
         }
-        SubCommand::Commit { skip, subcommand } => {
+        SubCommand::Commit => {
             model::Configuration::get_global(&conn)
                 .and_then(|mut conf| {
-                    if *skip {
-                        let change_set = model::ChangeConfig {
-                            id: 1,
-                            current_student: match subcommand {
-                                CommitCommand::Student => None,
-                                CommitCommand::Project => conf.current_student
-                            },
-                            current_project: match subcommand {
-                                CommitCommand::Student => conf.current_project,
-                                CommitCommand::Project => None
-                            },
-                            auto_grade: None,
-                            manual_grade: None,
-                            comment: None,
-                            base_image: Some(conf.base_image.as_str()),
-                        };
-                        diesel::replace_into(schema::configuration::table)
-                            .values(change_set)
-                            .execute(&conn)
-                            .map_err(Into::into)
-                            .and(Ok(()))
-                    } else if conf.current_student.is_none() {
-                        Err(anyhow::anyhow!("no current grading student"))
-                    } else if conf.current_project.is_none() {
+                    if conf.current_project.is_none() {
                         Err(anyhow::anyhow!("no current grading project"))
-                    } else if conf.auto_grade.is_none() || conf.manual_grade.is_none() {
-                        Err(anyhow::anyhow!("current grading is not finished"))
+                    } else if conf.current_student.is_none() {
+                        Err(anyhow::anyhow!("not current grading student"))
                     } else {
-                        let new_grade = model::ChangeGrade {
-                            student_id: match subcommand {
-                                CommitCommand::Student => conf.current_student.take(),
-                                CommitCommand::Project => conf.current_student.clone()
-                            },
-                            project_id: match subcommand {
-                                CommitCommand::Student => conf.current_student.clone(),
-                                CommitCommand::Project => conf.current_student.take()
-                            },
+                        let grade = model::ChangeGrade {
+                            student_id: conf.current_student.take(),
+                            project_id: conf.current_project.clone(),
                             manual_grade: conf.manual_grade.take(),
                             auto_grade: conf.auto_grade.take(),
+                            comment: conf.comment.take(),
                         };
                         diesel::replace_into(schema::grade::table)
-                            .values(new_grade)
+                            .values(grade)
                             .execute(&conn)
-                            .and_then(|_| {
-                                diesel::replace_into(schema::configuration::table)
-                                    .values(conf)
-                                    .execute(&conn)
-                                    .map_err(Into::into)
+                            .and_then_into(|_| {
+                                conf.store(&conn)
                             })
-                            .map_err(Into::into)
-                            .and(Ok(()))
                     }
                 })
                 .unwrap_with_log();
+        }
+        SubCommand::Clean { subcommand } => {
+            if subcommand == &CleanCommand::Config {
+                diesel::delete(schema::configuration::table)
+                    .execute(&conn)
+                    .unwrap_with_log();
+            } else {
+                model::Configuration::get_global(&conn)
+                    .and_then(|mut conf| {
+                        if subcommand == &CleanCommand::Comment || subcommand >= &CleanCommand::Student {
+                            conf.comment.take();
+                        }
+                        if subcommand == &CleanCommand::AutoGrade || subcommand >= &CleanCommand::Student {
+                            conf.auto_grade.take();
+                        }
+                        if subcommand == &CleanCommand::ManualGrade || subcommand >= &CleanCommand::Student {
+                            conf.manual_grade.take();
+                        }
+                        if subcommand >= &CleanCommand::Student {
+                            conf.current_student.take();
+                        }
+                        if subcommand >= &CleanCommand::Project {
+                            conf.current_project.take();
+                        }
+                        conf.store(&conn)
+                    })
+                    .unwrap_with_log();
+            }
         }
         SubCommand::Project { subcommand } => {
             let sql_result = match subcommand {
@@ -267,70 +270,96 @@ fn main() {
                 }
             }
         }
-        SubCommand::Status { subcommand } => {
-            match subcommand {
-                StatusCommand::Current => {
-                    model::Configuration::get_global(&conn)
-                        .map(|x| {
-                            println!("{}", tablefy::into_string(&vec![x]))
+        SubCommand::Next { subcommand } => {
+            use schema::grade::dsl as g;
+            use schema::project::dsl as p;
+            use schema::student::dsl as s;
+            let mut conf = model::Configuration::get_global(&conn)
+                .unwrap_with_log();
+            let result = match subcommand {
+                NextCommand::Project { id } => {
+                    if conf.current_student.is_some() {
+                        Err(anyhow::anyhow!("Please commit current student first"))
+                    } else {
+                        conf.current_project.replace(*id);
+                        diesel::select(diesel::dsl::exists(p::project.find(id)))
+                            .get_result(&conn)
+                            .and_then_into(|flag|
+                                {
+                                    if flag {
+                                        conf.store(&conn).and(Ok(()))
+                                    } else {
+                                        Err(anyhow::anyhow!("no such project"))
+                                    }
+                                })
+                    }
+                }
+                NextCommand::Student { id } => {
+                    if conf.current_project.is_none() {
+                        Err(anyhow::anyhow!("Please set a project first"))
+                    } else if conf.current_student.is_some() {
+                        Err(anyhow::anyhow!("Please commit current student first"))
+                    } else {
+                        let target: anyhow::Result<i32> = if let Some(id) = id {
+                            diesel::select(diesel::dsl::exists(s::student.find(id)))
+                                .get_result(&conn)
+                                .and_then_into(|flag| if flag { Ok(*id) } else { Err(anyhow::anyhow!("no such student")) })
+                        } else {
+                            s::student.filter(diesel::dsl::not(
+                                diesel::dsl::exists(
+                                    g::grade.filter(g::project_id
+                                        .eq(conf.current_project.unwrap())
+                                        .and(g::student_id.eq(s::id))))))
+                                .select(s::id)
+                                .first(&conn)
+                                .map_err(Into::into)
+                        };
+                        target.and_then(|id| {
+                            conf.current_student.replace(id);
+                            conf.store(&conn)
+                                .and(Ok(()))
                         })
-                        .unwrap_with_log();
-                }
-                StatusCommand::Projects => {
-                    let projects = schema::project::table
-                        .load::<model::Project>(&conn)
-                        .unwrap_with_log();
-                    println!("{}", tablefy::into_string(&projects));
-                }
-                StatusCommand::Students => {
-                    let students = schema::student::table
-                        .load::<model::Student>(&conn)
-                        .unwrap_with_log();
-                    println!("{}", tablefy::into_string(&students));
-                }
-                StatusCommand::Grading => {
-                    let students = schema::student::table
-                        .load::<model::Student>(&conn)
-                        .unwrap_with_log();
-                    let projects = schema::project::table
-                        .load::<model::Project>(&conn)
-                        .unwrap_with_log();
-                    let mut table = prettytable::Table::new();
-                    let mut header = prettytable::Row::empty();
-                    header.add_cell(Cell::new("id"));
-                    header.add_cell(Cell::new("student"));
-                    for j in &projects {
-                        header.add_cell(Cell::new(&format!("{}[aut]", j.path)));
-                        header.add_cell(Cell::new(&format!("{}[man]", j.path)));
                     }
-                    table.add_row(header);
-                    for i in &students {
-                        let mut row = prettytable::Row::empty();
-                        row.add_cell(Cell::new(&i.id.to_string()));
-                        row.add_cell(Cell::new(&i.path));
-                        for j in &projects {
-                            use schema::grade::dsl as g;
-                            let grade : QueryResult<model::Grade> = g::grade
-                                .filter(g::student_id
-                                    .eq(i.id)
-                                    .and(g::project_id.eq(j.id)))
-                                .first::<model::Grade>(&conn);
-                            match grade {
-                                Ok(g) => {
-                                    row.add_cell(prettytable::Cell::new(&g.auto_grade.to_string()));
-                                    row.add_cell(prettytable::Cell::new(&g.manual_grade.to_string()));
-                                }
-                                _ => {
-                                    row.add_cell(prettytable::Cell::default());
-                                    row.add_cell(prettytable::Cell::default());
-                                }
-                            }
-                        }
-                        table.add_row(row);
-                    }
-                    table.printstd();
                 }
+            };
+            result.unwrap_with_log();
+        }
+        SubCommand::Status { subcommand } => {
+            status::handle(subcommand, &conn)
+        }
+        SubCommand::Remove { all, id } => {
+            if *all {
+                dialoguer::Confirm::new().with_prompt("Are you sure to remove all grades")
+                    .interact()
+                    .and_then_into(|x| if x {
+                        diesel::delete(schema::grade::table)
+                            .execute(&conn)
+                            .map(|x| {
+                                log::info!("deleted {} items", x)
+                            })
+                            .map_err(Into::into)
+                    } else {
+                        Err(anyhow::anyhow!("operation canceled"))
+                    })
+                    .unwrap_with_log();
+            } else {
+                let id = id.unwrap();
+                dialoguer::Confirm::new().with_prompt(format!("Are you sure to remove grade #{}", id))
+                    .interact()
+                    .and_then_into(|x| if x {
+                        diesel::delete(schema::grade::table
+                            .filter(schema::grade::id.eq(id)))
+                            .execute(&conn)
+                            .map(|x| {
+                                log::info!("deleted {} items", x)
+                            })
+                            .map_err(Into::into)
+                    } else {
+                        Err(anyhow::anyhow!("operation canceled"))
+                    })
+                    .unwrap_with_log();
             }
         }
     }
 }
+

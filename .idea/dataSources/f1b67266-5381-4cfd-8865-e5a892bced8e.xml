@@ -186,27 +186,21 @@
       <DataType>VARCHAR|0s</DataType>
       <NotNull>1</NotNull>
     </column>
-    <column id="48" parent="12" name="graded">
-      <Position>3</Position>
-      <DataType>BOOLEAN|0s</DataType>
-      <NotNull>1</NotNull>
-      <DefaultExpression>TRUE</DefaultExpression>
-    </column>
-    <index id="49" parent="12" name="sqlite_autoindex_student_1">
+    <index id="48" parent="12" name="sqlite_autoindex_student_1">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>path</ColNames>
       <ColumnCollations></ColumnCollations>
       <Unique>1</Unique>
     </index>
-    <key id="50" parent="12">
+    <key id="49" parent="12">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
     </key>
-    <key id="51" parent="12">
+    <key id="50" parent="12">
       <ColNames>path</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_student_1</UnderlyingIndexName>
     </key>
-    <key id="52" parent="12">
+    <key id="51" parent="12">
       <ColNames>path</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_student_1</UnderlyingIndexName>
     </key>

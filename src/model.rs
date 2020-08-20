@@ -41,6 +41,7 @@ pub struct Project {
     diesel::Associations,
     serde::Serialize,
     Debug,
+    Tablefy,
     serde::Deserialize)]
 #[table_name="grade"]
 #[belongs_to(Student)]
@@ -90,7 +91,8 @@ pub struct ChangeGrade {
     pub student_id: Option<i32>,
     pub project_id: Option<i32>,
     pub manual_grade: Option<i32>,
-    pub auto_grade: Option<i32>
+    pub auto_grade: Option<i32>,
+    pub comment: Option<String>
 }
 
 #[derive(Insertable, Default, Debug, AsChangeset)]
@@ -127,6 +129,12 @@ impl Configuration {
         use crate::schema::configuration::dsl::*;
         configuration
             .first::<Configuration>(conn)
+            .map_err(Into::into)
+    }
+    pub fn store(&self, conn :&diesel::SqliteConnection) -> Result<usize> {
+        diesel::replace_into(crate::schema::configuration::table)
+            .values(self)
+            .execute(conn)
             .map_err(Into::into)
     }
 }
