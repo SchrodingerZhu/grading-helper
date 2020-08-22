@@ -11,6 +11,7 @@ use structopt::StructOpt;
 
 use utils::*;
 
+use crate::judge::JudgeCommand;
 use crate::model::{ChangeStudent, Configuration};
 
 mod container;
@@ -18,6 +19,8 @@ mod schema;
 mod model;
 mod status;
 mod utils;
+mod judge;
+mod dump;
 
 #[derive(opt::StructOpt, Debug)]
 struct Opt {
@@ -67,10 +70,25 @@ enum SubCommand {
         #[structopt(subcommand)]
         subcommand: ProjectCommand
     },
+    #[structopt(about = "Student management")]
+    Student {
+        #[structopt(subcommand)]
+        subcommand: StudentCommand
+    },
     #[structopt(about = "Get next student or project")]
     Next {
         #[structopt(subcommand)]
         subcommand: NextCommand
+    },
+    #[structopt(about = "Judge current project")]
+    Judge {
+        #[structopt(subcommand)]
+        subcommand: JudgeCommand
+    },
+    #[structopt(about = "Dump grades")]
+    Dump {
+        #[structopt(long, short, help = "Path to the output file")]
+        target: String
     },
 }
 
@@ -90,6 +108,8 @@ enum NextCommand {
 
 #[derive(opt::StructOpt, Debug, Ord, PartialOrd, Eq, PartialEq)]
 enum CleanCommand {
+    #[structopt(about = "Clean current compile and run result")]
+    Result,
     #[structopt(about = "Clean current auto grade")]
     AutoGrade,
     #[structopt(about = "Clean current manual grade")]
@@ -113,12 +133,24 @@ enum ProjectCommand {
     Add {
         #[structopt(short, long, help = "Path to the project template")]
         path: PathBuf,
-        #[structopt(short, long, help = "Grade for manual judging")]
-        manual_grade: i32,
-        #[structopt(short, long, help = "Grade for automatic judging")]
-        auto_grade: i32,
+        #[structopt(short, long, help = "Project identifier")]
+        name: String,
     },
     #[structopt(about = "Remove the template")]
+    Remove {
+        #[structopt(short, long, help = "The id to remove")]
+        id: i32
+    },
+}
+
+#[derive(opt::StructOpt, Debug)]
+enum StudentCommand {
+    #[structopt(about = "Add a new student")]
+    Add {
+        #[structopt(short, long, help = "Path to the student submission")]
+        path: PathBuf,
+    },
+    #[structopt(about = "Remove the student")]
     Remove {
         #[structopt(short, long, help = "The id to remove")]
         id: i32
@@ -193,13 +225,30 @@ fn main() {
                     } else if conf.current_student.is_none() {
                         Err(anyhow::anyhow!("not current grading student"))
                     } else {
+                        use crate::schema::grade::dsl as g;
+                        let grade: QueryResult<crate::model::Grade> = g::grade
+                            .filter(g::student_id
+                                .eq(conf.current_student.unwrap())
+                                .and(g::project_id.eq(conf.current_project.unwrap())))
+                            .first::<crate::model::Grade>(&conn);
                         let grade = model::ChangeGrade {
+                            id: match grade {
+                                Ok(x) => Some(x.id),
+                                _ => None
+                            },
                             student_id: conf.current_student.take(),
                             project_id: conf.current_project.clone(),
                             manual_grade: conf.manual_grade.take(),
                             auto_grade: conf.auto_grade.take(),
                             comment: conf.comment.take(),
+                            compile_stdout: conf.compile_stdout.take(),
+                            compile_stderr: conf.compile_stderr.take(),
+                            compile_return: conf.compile_return.take(),
+                            run_stdout: conf.run_stdout.take(),
+                            run_stderr: conf.run_stderr.take(),
+                            run_return: conf.run_return.take(),
                         };
+
                         diesel::replace_into(schema::grade::table)
                             .values(grade)
                             .execute(&conn)
@@ -210,6 +259,9 @@ fn main() {
                 })
                 .unwrap_with_log();
         }
+        SubCommand::Dump { target } => {
+            dump::dump(&conn, target);
+        }
         SubCommand::Clean { subcommand } => {
             if subcommand == &CleanCommand::Config {
                 diesel::delete(schema::configuration::table)
@@ -218,6 +270,14 @@ fn main() {
             } else {
                 model::Configuration::get_global(&conn)
                     .and_then(|mut conf| {
+                        if subcommand == &CleanCommand::Result || subcommand >= &CleanCommand::Student {
+                            conf.compile_return.take();
+                            conf.compile_stderr.take();
+                            conf.compile_stdout.take();
+                            conf.run_return.take();
+                            conf.run_stderr.take();
+                            conf.run_stdout.take();
+                        }
                         if subcommand == &CleanCommand::Comment || subcommand >= &CleanCommand::Student {
                             conf.comment.take();
                         }
@@ -247,18 +307,49 @@ fn main() {
                         .execute(&conn)
                         .map_err(Into::into)
                 }
-                ProjectCommand::Add { path, manual_grade, auto_grade } => {
+                ProjectCommand::Add { path, name } => {
                     path.to_str()
                         .ok_or(anyhow::anyhow!("invalid path"))
                         .and_then_into(|x| {
                             diesel::insert_into(schema::project::table)
                                 .values(model::ChangeProject {
                                     path: Some(x),
-                                    manual_grade: Some(*manual_grade),
-                                    auto_grade: Some(*auto_grade),
+                                    name: Some(name),
                                 })
                                 .execute(&conn)
                         })
+                }
+            };
+            match sql_result {
+                Ok(delta) => {
+                    log::info!("updated {} item(s)", delta);
+                }
+                Err(e) => {
+                    log::error!("{}", e);
+                }
+            }
+        }
+        SubCommand::Student { subcommand } => {
+            let sql_result = match subcommand {
+                StudentCommand::Remove { id: target_id } => {
+                    use schema::project::dsl::*;
+                    diesel::delete(project)
+                        .filter(id.eq(target_id))
+                        .execute(&conn)
+                        .map_err(Into::into)
+                }
+                StudentCommand::Add { path } => {
+                    path.canonicalize()
+                        .and_then_into(|path| path
+                            .to_str()
+                            .ok_or(anyhow::anyhow!("invalid path"))
+                            .and_then_into(|x| {
+                                diesel::insert_into(schema::student::table)
+                                    .values(model::ChangeStudent {
+                                        path: Some(x),
+                                    })
+                                    .execute(&conn)
+                            }))
                 }
             };
             match sql_result {
@@ -323,6 +414,9 @@ fn main() {
                 }
             };
             result.unwrap_with_log();
+        }
+        SubCommand::Judge { subcommand } => {
+            judge::handle(&conn, subcommand)
         }
         SubCommand::Status { subcommand } => {
             status::handle(subcommand, &conn)

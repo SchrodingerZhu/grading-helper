@@ -1,10 +1,10 @@
 use diesel::prelude::*;
+use prettytable::{Cell, Table};
 use structopt as opt;
 
 use crate::model;
 use crate::schema;
 use crate::utils::*;
-use prettytable::{Table, Cell};
 
 #[derive(opt::StructOpt, Debug)]
 pub enum StatusCommand {
@@ -18,9 +18,9 @@ pub enum StatusCommand {
     Grading,
     #[structopt(about = "List grades")]
     Grades {
-        #[structopt(short, long, help="Filter by student id")]
+        #[structopt(short, long, help = "Filter by student id")]
         student_id: Option<i32>,
-        #[structopt(short, long, help="Filter by project id")]
+        #[structopt(short, long, help = "Filter by project id")]
         project_id: Option<i32>,
     },
 }
@@ -30,7 +30,44 @@ pub fn handle(subcommand: &StatusCommand, conn: &SqliteConnection) {
         StatusCommand::Current => {
             model::Configuration::get_global(conn)
                 .map(|x| {
-                    println!("{}", tablefy::into_string(&vec![x]))
+                    use prettytable::*;
+                    let mut table = Table::new();
+                    table.add_row(Row::new(vec![Cell::new("current_student"),
+                                                Cell::new(&x.current_student.as_ref().map(|x| x.to_string())
+                                                    .unwrap_or_else(String::new))]));
+                    table.add_row(Row::new(vec![Cell::new("current project"),
+                                                Cell::new(&x.current_project.as_ref().map(|x| x.to_string())
+                                                    .unwrap_or_else(String::new))]));
+                    table.add_row(Row::new(vec![Cell::new("auto_grade"),
+                                                Cell::new(&x.auto_grade.as_ref().map(|x| x.to_string())
+                                                    .unwrap_or_else(String::new))]));
+                    table.add_row(Row::new(vec![Cell::new("manual_grade"),
+                                                Cell::new(&x.manual_grade.as_ref().map(|x| x.to_string())
+                                                    .unwrap_or_else(String::new))]));
+                    table.add_row(Row::new(vec![Cell::new("comment"),
+                                                Cell::new(x.comment.as_ref().map(AsRef::as_ref)
+                                                    .unwrap_or(""))]));
+                    table.add_row(Row::new(vec![Cell::new("base_image"),
+                                                Cell::new(x.base_image.as_ref())]));
+                    table.add_row(Row::new(vec![Cell::new("compile_stdout"),
+                                                Cell::new(x.compile_stdout.as_ref().map(AsRef::as_ref)
+                                                    .unwrap_or(""))]));
+                    table.add_row(Row::new(vec![Cell::new("compile_stderr"),
+                                                Cell::new(x.compile_stderr.as_ref().map(AsRef::as_ref)
+                                                    .unwrap_or(""))]));
+                    table.add_row(Row::new(vec![Cell::new("compile_return"),
+                                                Cell::new(&x.compile_return.as_ref().map(|x| x.to_string())
+                                                    .unwrap_or_else(String::new))]));
+                    table.add_row(Row::new(vec![Cell::new("run_stdout"),
+                                                Cell::new(x.run_stdout.as_ref().map(AsRef::as_ref)
+                                                    .unwrap_or(""))]));
+                    table.add_row(Row::new(vec![Cell::new("run_stderr"),
+                                                Cell::new(x.run_stderr.as_ref().map(AsRef::as_ref)
+                                                    .unwrap_or(""))]));
+                    table.add_row(Row::new(vec![Cell::new("run_return"),
+                                                Cell::new(&x.run_return.as_ref().map(|x| x.to_string())
+                                                    .unwrap_or_else(String::new))]));
+                    table.printstd();
                 })
                 .unwrap_with_log();
         }
@@ -93,10 +130,10 @@ pub fn handle(subcommand: &StatusCommand, conn: &SqliteConnection) {
                 .load::<model::Grade>(conn)
                 .unwrap_with_log();
             if let Some(id) = student_id {
-                query = query.into_iter().filter(|x|x.student_id == *id).collect()
+                query = query.into_iter().filter(|x| x.student_id == *id).collect()
             }
             if let Some(id) = project_id {
-                query = query.into_iter().filter(|x|x.project_id == *id).collect()
+                query = query.into_iter().filter(|x| x.project_id == *id).collect()
             }
             println!("{}", tablefy::into_string(&query));
         }

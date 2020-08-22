@@ -7,6 +7,12 @@ table! {
         manual_grade -> Nullable<Integer>,
         comment -> Nullable<Text>,
         base_image -> Text,
+        compile_stdout -> Nullable<Text>,
+        compile_stderr -> Nullable<Text>,
+        compile_return -> Nullable<Integer>,
+        run_stdout -> Nullable<Text>,
+        run_stderr -> Nullable<Text>,
+        run_return -> Nullable<Integer>,
     }
 }
 
@@ -18,6 +24,12 @@ table! {
         manual_grade -> Integer,
         auto_grade -> Integer,
         comment -> Text,
+        compile_stdout -> Text,
+        compile_stderr -> Text,
+        compile_return -> Integer,
+        run_stdout -> Text,
+        run_stderr -> Text,
+        run_return -> Integer,
     }
 }
 
@@ -25,8 +37,7 @@ table! {
     project (id) {
         id -> Integer,
         path -> Text,
-        manual_grade -> Integer,
-        auto_grade -> Integer,
+        name -> Text,
     }
 }
 

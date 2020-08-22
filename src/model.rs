@@ -32,8 +32,7 @@ pub struct Student {
 pub struct Project {
     pub id: i32,
     pub path: String,
-    pub manual_grade: i32,
-    pub auto_grade: i32
+    pub name: String,
 }
 
 #[derive(diesel::Queryable,
@@ -52,7 +51,13 @@ pub struct Grade {
     pub project_id: i32,
     pub manual_grade: i32,
     pub auto_grade: i32,
-    pub comment: String
+    pub comment: String,
+    pub compile_stdout: String,
+    pub compile_stderr: String,
+    pub compile_return: i32,
+    pub run_stdout: String,
+    pub run_stderr: String,
+    pub run_return: i32
 }
 
 #[derive(diesel::Queryable,
@@ -70,7 +75,13 @@ pub struct Configuration {
     pub auto_grade: Option<i32>,
     pub manual_grade: Option<i32>,
     pub comment: Option<String>,
-    pub base_image: String
+    pub base_image: String,
+    pub compile_stdout: Option<String>,
+    pub compile_stderr: Option<String>,
+    pub compile_return: Option<i32>,
+    pub run_stdout: Option<String>,
+    pub run_stderr: Option<String>,
+    pub run_return: Option<i32>
 }
 
 #[derive(Insertable, Default, Debug, AsChangeset)]
@@ -82,25 +93,37 @@ pub struct ChangeConfig<'a> {
     pub auto_grade: Option<i32>,
     pub manual_grade: Option<i32>,
     pub comment: Option<&'a str>,
-    pub base_image: Option<&'a str>
+    pub base_image: Option<&'a str>,
+    pub compile_stdout: Option<String>,
+    pub compile_stderr: Option<String>,
+    pub compile_return: Option<i32>,
+    pub run_stdout: Option<String>,
+    pub run_stderr: Option<String>,
+    pub run_return: Option<i32>
 }
 
 #[derive(Insertable, Default, Debug, AsChangeset)]
 #[table_name="grade"]
 pub struct ChangeGrade {
+    pub id: Option<i32>,
     pub student_id: Option<i32>,
     pub project_id: Option<i32>,
     pub manual_grade: Option<i32>,
     pub auto_grade: Option<i32>,
-    pub comment: Option<String>
+    pub comment: Option<String>,
+    pub compile_stdout: Option<String>,
+    pub compile_stderr: Option<String>,
+    pub compile_return: Option<i32>,
+    pub run_stdout: Option<String>,
+    pub run_stderr: Option<String>,
+    pub run_return: Option<i32>
 }
 
 #[derive(Insertable, Default, Debug, AsChangeset)]
 #[table_name="project"]
 pub struct ChangeProject<'a> {
     pub path: Option<&'a str>,
-    pub manual_grade: Option<i32>,
-    pub auto_grade: Option<i32>
+    pub name: Option<&'a str>
 }
 
 #[derive(Insertable, Default, Debug, AsChangeset)]
@@ -120,7 +143,13 @@ impl Configuration {
                 auto_grade: None,
                 manual_grade: None,
                 comment: None,
-                base_image: Some(base_image)
+                base_image: Some(base_image),
+                compile_stdout: None,
+                compile_stderr: None,
+                compile_return: None,
+                run_stdout: None,
+                run_stderr: None,
+                run_return: None
             })
             .execute(conn)?;
         Ok(())
