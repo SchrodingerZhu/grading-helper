@@ -3,7 +3,6 @@ use std::process::Command;
 
 use anyhow::*;
 use tempfile as tmp;
-use tempfile::{tempdir, TempDir, TempPath};
 
 use crate::utils::AndThenInto;
 
@@ -98,7 +97,7 @@ impl Container {
                 Container::clean_up(lower_dir.path());
                 e
             })?;
-        student_target.push("student");
+        student_target.push("src");
         let _project_mount_pair = Self::overlay(project_dir, project_target)
             .map_err(|e| {
                 Container::clean_up(lower_dir.path());
@@ -114,7 +113,7 @@ impl Container {
                 Container::clean_up(lower_dir.path());
                 e
             })?;
-        let _student_mount_pair = Self::overlay(student_dir, student_target).map_err(|e| {
+        let _student_mount_pair = Self::overlay(format!("{}/src", student_dir.display()), student_target).map_err(|e| {
             Container::clean_up(lower_dir.path());
             e
         })?;

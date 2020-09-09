@@ -1,18 +1,18 @@
 #[macro_use]
 extern crate diesel;
+extern crate simple_excel_writer as excel;
 
 use std::path::PathBuf;
 
 use diesel::{BoolExpressionMethods, Connection, ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use prettytable::Cell;
-use serde::export::fmt::Display;
 use structopt as opt;
 use structopt::StructOpt;
 
 use utils::*;
 
 use crate::judge::JudgeCommand;
-use crate::model::{ChangeStudent, Configuration};
+use crate::model::ChangeStudent;
+
 
 mod container;
 mod schema;

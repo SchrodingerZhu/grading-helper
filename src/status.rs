@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use prettytable::{Cell, Table};
+use prettytable::Cell;
 use structopt as opt;
 
 use crate::model;
@@ -10,6 +10,14 @@ use crate::utils::*;
 pub enum StatusCommand {
     #[structopt(about = "Check configuration and current project")]
     Current,
+    #[structopt(about = "Check compile stdout")]
+    CurrentCompileStdout,
+    #[structopt(about = "Check compile stderr")]
+    CurrentCompileStderr,
+    #[structopt(about = "Check run stdout")]
+    CurrentRunStdout,
+    #[structopt(about = "Check run stderr")]
+    CurrentRunStderr,
     #[structopt(about = "List all project template(s)")]
     Projects,
     #[structopt(about = "List all students")]
@@ -49,21 +57,9 @@ pub fn handle(subcommand: &StatusCommand, conn: &SqliteConnection) {
                                                     .unwrap_or(""))]));
                     table.add_row(Row::new(vec![Cell::new("base_image"),
                                                 Cell::new(x.base_image.as_ref())]));
-                    table.add_row(Row::new(vec![Cell::new("compile_stdout"),
-                                                Cell::new(x.compile_stdout.as_ref().map(AsRef::as_ref)
-                                                    .unwrap_or(""))]));
-                    table.add_row(Row::new(vec![Cell::new("compile_stderr"),
-                                                Cell::new(x.compile_stderr.as_ref().map(AsRef::as_ref)
-                                                    .unwrap_or(""))]));
                     table.add_row(Row::new(vec![Cell::new("compile_return"),
                                                 Cell::new(&x.compile_return.as_ref().map(|x| x.to_string())
                                                     .unwrap_or_else(String::new))]));
-                    table.add_row(Row::new(vec![Cell::new("run_stdout"),
-                                                Cell::new(x.run_stdout.as_ref().map(AsRef::as_ref)
-                                                    .unwrap_or(""))]));
-                    table.add_row(Row::new(vec![Cell::new("run_stderr"),
-                                                Cell::new(x.run_stderr.as_ref().map(AsRef::as_ref)
-                                                    .unwrap_or(""))]));
                     table.add_row(Row::new(vec![Cell::new("run_return"),
                                                 Cell::new(&x.run_return.as_ref().map(|x| x.to_string())
                                                     .unwrap_or_else(String::new))]));
@@ -136,6 +132,22 @@ pub fn handle(subcommand: &StatusCommand, conn: &SqliteConnection) {
                 query = query.into_iter().filter(|x| x.project_id == *id).collect()
             }
             println!("{}", tablefy::into_string(&query));
+        }
+        StatusCommand::CurrentCompileStdout => {
+            let g = model::Configuration::get_global(conn).unwrap_with_log();
+            println!("{}", g.compile_stdout.unwrap_or_else(String::new));
+        }
+        StatusCommand::CurrentCompileStderr => {
+            let g = model::Configuration::get_global(conn).unwrap_with_log();
+            println!("{}", g.compile_stderr.unwrap_or_else(String::new));
+        }
+        StatusCommand::CurrentRunStdout => {
+            let g = model::Configuration::get_global(conn).unwrap_with_log();
+            println!("{}", g.run_stdout.unwrap_or_else(String::new));
+        }
+        StatusCommand::CurrentRunStderr => {
+            let g = model::Configuration::get_global(conn).unwrap_with_log();
+            println!("{}", g.run_stderr.unwrap_or_else(String::new));
         }
     }
 }

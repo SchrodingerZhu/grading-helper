@@ -147,8 +147,7 @@ pub fn handle(conn: &SqliteConnection, subcommand: &JudgeCommand) {
                     .unwrap())
                 .get_result(conn)
                 .unwrap_with_log();
-            let mut student_path = PathBuf::from(student.path);
-            student_path.push(project.name);
+            let student_path = PathBuf::from(student.path);
             Container::new(
                 conf.base_image.as_ref(),
                 student_path.as_path(),
